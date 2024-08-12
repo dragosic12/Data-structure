@@ -1,0 +1,271 @@
+04.cpp
+
+#include "Hora.h"
+#include "Pelicula.h"
+
+bool comp(const Pelicula& p1, const Pelicula& p2) {
+	if (p1 < p2) {
+		return true;
+	}
+	else  {
+		if (p1.get_horaIni() == p2.get_horaIni()) {
+			if (p1.get_nombrePelicula() > p2.get_nombrePelicula()) {
+
+				return false;
+			}
+			else {
+
+				return true;
+			}
+		}
+		else {
+			return false;
+		}
+	}
+}
+
+vector<Pelicula> leerDatos(const int& numDatos) {
+	vector <Pelicula> pelis;
+	Pelicula p;
+	Hora h;
+	string n;
+
+	for (int i = 0; i < numDatos; i++) {
+		cin >> h;
+		p.set_horaIni(h);
+		cin >> h;
+		p.set_horaDur(h);
+		getline(cin, n);
+		p.set_nombrePelicula(n);
+		pelis.push_back(p);
+	}
+
+	return pelis;
+}
+
+void resuelveCaso(const int& numPeliculas) {
+
+	vector <Pelicula> peliculas = leerDatos(numPeliculas);
+	Hora hResultado;
+
+	for (int i = 0; i < peliculas.size(); i++) {
+		
+		hResultado = peliculas.at(i).get_horaIni() + peliculas.at(i).get_horaDur();
+		peliculas.at(i).set_horaIni(hResultado);
+	}
+
+	sort(peliculas.begin(), peliculas.end(), &comp);
+
+	for (int i = 0; i < peliculas.size(); i++) {
+
+		cout << peliculas.at(i).get_horaIni() << peliculas.at(i).get_nombrePelicula() << "\n";
+	}
+}
+
+
+int main() {
+# ifndef DOMJUDGE
+
+	ifstream in("04.txt");
+	auto cinbuf = cin.rdbuf(in.rdbuf()); // save old buf and redirect std :: cin to casos .txt
+# endif
+
+	int numPeliculas;
+	cin >> numPeliculas;
+	while (numPeliculas != 0) { // Resolvemos todos los casos
+		resuelveCaso(numPeliculas);
+		cout << "---\n";
+		cin >> numPeliculas;
+	}
+# ifndef DOMJUDGE // para dejar todo como estaba al principio
+
+	cin.rdbuf(cinbuf);
+	system(" PAUSE ");
+# endif
+
+	return 0;
+}
+
+
+Hora.h
+
+#ifndef HORA
+#define HORA
+
+#include <iostream>
+#include <fstream>
+#include <stdexcept>
+#include <cmath>
+#include <iomanip>
+#include <string>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+class Hora {
+public:
+	//Constructores
+	Hora() {}
+	Hora(int h, int m, int s) : horas(h), mins(m), segs(s) {
+		if (!isValid()) {
+			throw invalid_argument("ERROR");
+		}
+	}
+
+	//Consultores
+	int get_horas() const {
+		return this->horas;
+	}
+
+	int get_mins() const {
+		return this->mins;
+	}
+
+	int get_segs() const {
+		return this->segs;
+	}
+
+	/*int get_horaEnSegs() const {
+		return ((this->horas * 3600) + (this->mins * 60) + this->segs);
+	}*/
+
+	//Operadores
+
+	bool operator == (Hora const& h) const {
+		return this->horas == h.horas && this->mins == h.mins && this->segs == h.segs;
+	}
+
+	bool isValid() {
+		return isWithinRange(horas, 0, MAX_HORAS) && isWithinRange(mins, 0, MAX_MINS) && isWithinRange(segs, 0, MAX_SEGS);
+	}
+
+	Hora& operator= (Hora const& h) {
+		if (this != &h) {
+			horas = h.horas;
+			mins = h.mins;
+			segs = h.segs;
+		}
+
+		return *this;
+	}
+
+	Hora& operator + (Hora const& h) {
+		int horas, mins, segs;
+		segs = this->segs + h.segs;
+		if (segs >= 60) {
+			this->segs = segs - 60;
+			this->mins = this->mins + 1;
+		}
+		else {
+			this->segs = segs;
+		}
+
+		mins = this->mins + h.mins;
+
+		if (mins >= 60) {
+			this->mins = mins - 60;
+			this->horas = this->horas + 1;
+
+		}
+		else {
+			this->mins = mins;
+		}
+
+		horas = this->horas + h.horas;
+		if (horas >= 24) {
+			throw overflow_error("Ha superado el día actual!");
+		}
+		else {
+			this->horas = horas;
+		}
+
+		return *this;
+	}
+
+	friend istream& operator >>(istream& in, Hora& h);
+
+private:
+	int horas, mins, segs;
+
+	const int MAX_HORAS = 23;
+	const int MAX_MINS = 59;
+	const int MAX_SEGS = 59;
+
+	bool isWithinRange(const int value, const int a, const int b) {
+		return value >= a && value <= b;
+	}
+};
+
+inline ostream& operator<< (ostream& out, Hora const& h) {
+	out << setfill('0') << setw(2) << h.get_horas() << ":" << setw(2) << h.get_mins() << ":" << setw(2) << h.get_segs() << setfill(' ');
+	return out;
+}
+
+inline istream& operator>> (istream& in, Hora& h) {
+	int horas, minutos, segundos;
+	char basura;
+
+	in >> horas >> basura >> minutos >> basura >> segundos;
+
+	h = Hora(horas, minutos, segundos);
+
+	return in;
+}
+#endif
+
+
+Pelicula.h
+
+#ifndef PELICULA
+#define PELICULA
+
+#include "Hora.h"
+
+class Pelicula {
+public:
+	//Constructores
+	Pelicula() {}
+	Pelicula(Hora hI, Hora hD, string n) : hInicial(hI), hDuracion(hD), nombrePelicula(n) {
+	}
+
+	Hora get_horaIni() const {
+		return this->hInicial;
+	}
+
+	Hora get_horaDur() const {
+		return this->hDuracion;
+	}
+
+	string get_nombrePelicula() const {
+		return this->nombrePelicula;
+	}
+
+	void set_horaIni(Hora h) {
+		this->hInicial = h;
+	}
+
+	void set_horaDur(Hora h) {
+		this->hDuracion = h;
+	}
+
+	void set_nombrePelicula(string n) {
+		this->nombrePelicula = n;
+	}
+
+	//Operadores
+
+	bool operator < (Pelicula const& p) const {
+		if (hInicial.get_horas() < p.hInicial.get_horas()) return true;
+		else if (hInicial.get_horas() > p.hInicial.get_horas()) return false;
+		else if (hInicial.get_mins() < p.hInicial.get_mins()) return true;
+		else if (hInicial.get_mins() > p.hInicial.get_mins()) return false;
+		else if (hInicial.get_segs() < p.hInicial.get_segs()) return true;
+		else return false;
+	}
+
+	private:
+		Hora hInicial, hDuracion;
+		string nombrePelicula;
+};
+#endif
